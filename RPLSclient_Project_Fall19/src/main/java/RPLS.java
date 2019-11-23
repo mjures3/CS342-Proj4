@@ -1,10 +1,15 @@
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -28,23 +33,26 @@ import javafx.util.Duration;
 
 public class RPLS extends Application {
 	
-	Text askPort, errorPort, askIP, errorIP, client1, client2, scoreClient1, scoreClient2, winnerText;
+	Text askPort, errorPort, askIP, errorIP, client1, client2, winnerText;
 	TextField portNumber, ipInput;
 	Button bt1, replay, quit;
 	HBox portBox, ipBox, choiceBox, scoreBox, continueBox;
-	VBox clientBox, resultBox;
+	VBox clientBox, resultBox, lobbyInfo;
 	Scene clientStart, gameScene, gameResult;
 	Client theClient;
 	BorderPane pane;
 	InetAddress ipNum;
 	Image rock, paper, scissor, lizard, spock;
 	ImageView rockView, paperView, scissorView, lizardView, spockView;
-	StackPane scoreDisplay1, scoreDisplay2;
-	Rectangle scoreRect1, scoreRect2;
 	PauseTransition gameDone = new PauseTransition(Duration.seconds(1));
 	
 	
-	ListView<String> gameInfo;
+	ListView<String> playerLobby = new ListView<String>();
+	//ObservableList<String> playerLobbyObserv = FXCollections.observableList(theClient.info.players);
+	ObservableList<String> playerLobbyObserv = FXCollections.observableArrayList();
+
+	ListView<String> gameInfo = new ListView<String>();
+	//ObservableList<String> gameInfoObserv = FXCollections.observableList(gameInfo);
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
@@ -77,18 +85,6 @@ public class RPLS extends Application {
 		quit = new Button("quit");
 		client1 = new Text("Player 1 :  ");
 		client2 = new Text("  : Player 2");
-		scoreClient1 = new Text("0");
-		scoreClient1.setFont(Font.font(30));
-		scoreClient2 = new Text("0");
-		scoreClient2.setFont(Font.font(30));
-		scoreRect1 = new Rectangle(75, 75);
-		scoreRect1.setArcHeight(20);
-		scoreRect1.setArcWidth(20);
-		scoreRect1.setFill(Color.ORANGE);
-		scoreRect2 = new Rectangle(75, 75);
-		scoreRect2.setArcHeight(20);
-		scoreRect2.setArcWidth(20);
-		scoreRect2.setFill(Color.BLUE);
 		
 		rock = new Image("rock.jpg");
 		paper = new Image("paper.jpg");
@@ -126,7 +122,8 @@ public class RPLS extends Application {
 		spockView.setPreserveRatio(true);
 		//spockView.setDisable(true);
 		
-		gameInfo = new ListView<String>();
+//		gameInfo = new ListView<String>();
+//		playerLobby = new ListView<String>();
 		
 		bt1.setOnAction(e-> {
 			try {
@@ -145,20 +142,17 @@ public class RPLS extends Application {
 				theClient = new Client(data -> {
 					Platform.runLater(() -> {
 //						gameInfo.getItems().add(data.toString());
-						gameInfo.getItems().add(theClient.info.message);
-						if(theClient.info.has2Players == false) {
-							disableButtons(true);
+						playerLobby.getItems().removeAll(playerLobbyObserv);
+						playerLobbyObserv.clear();
+						System.out.println("size = " + theClient.infoClient.players.size());
+						for(int i=0; i<theClient.infoClient.players.size(); i++) {
+							playerLobbyObserv.add(theClient.infoClient.players.get(i));
 						}
-						else disableButtons(false);
-						scoreClient1.setText(Integer.toString(theClient.info.p1Points));
-						scoreClient2.setText(Integer.toString(theClient.info.p2Points));
-						if(theClient.info.p1Points == 3 || theClient.info.p2Points == 3) {
-							gameDone.play();
-						}
+						playerLobby.setItems(playerLobbyObserv);
+						//System.out.println("hello");
 					});
 				}, ipNum, pNum);
 				theClient.start();
-				//check2Players();
 
 			}catch (NumberFormatException error) {
 				errorPort.setText("Error: input valid number");
@@ -196,7 +190,7 @@ public class RPLS extends Application {
 		});
 		
 		replay.setOnAction(e-> {
-			theClient.info.message = "true";
+			theClient.infoClient.message = "true";
 			//theClient.send(theClient.info);
 		});
 		
@@ -206,22 +200,18 @@ public class RPLS extends Application {
 		});
 		
 		gameDone.setOnFinished(e-> {
-			if(theClient.info.p1Points == 3) winnerText.setText("Player 1 Won!");
-			else winnerText.setText("Player 2 Won!");
+//			if(theClient.info.p1Points == 3) winnerText.setText("Player 1 Won!");
+//			else winnerText.setText("Player 2 Won!");
 			primaryStage.setScene(gameResult);
 			primaryStage.setTitle("Quit or Replay");
 		});
 		
-//		Platform.runLater(() -> {
-//			if (theClient.info.has2Players == true) {
-//				rockView.setDisable(false);
-//				paperView.setDisable(false);
-//				scissorView.setDisable(false);
-//				lizardView.setDisable(false);
-//				spockView.setDisable(false);
+//		playerLobbyObserv.addListener(new ListChangeListener<String>() {
+//			@Override
+//			public void onChanged(ListChangeListener.Change c) {
+//				playerLobby.setItems(playerLobbyObserv);
 //			}
-//			scoreClient1.setText(Integer.toString(theClient.info.p1Points));
-//			scoreClient2.setText(Integer.toString(theClient.info.p2Points));
+//			
 //		});
 		
 		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
@@ -243,21 +233,19 @@ public class RPLS extends Application {
 		clientStart = new Scene(clientBox, 500, 500);
 		//-------------------------------------------------------//
 		
-		//--------------Game info scene--------------------------//
-	    scoreDisplay1 = new StackPane(scoreRect1, scoreClient1);
-	    scoreDisplay2 = new StackPane(scoreRect2, scoreClient2);
-	    scoreBox = new HBox(client1, scoreDisplay1, scoreDisplay2, client2);
-	    scoreBox.setAlignment(Pos.TOP_CENTER);
-		choiceBox = new HBox(10, rockView, paperView, scissorView, lizardView, spockView);
-	    choiceBox.setAlignment(Pos.BOTTOM_CENTER);
+		//--------------Player Lobby info scene--------------------------//
+		lobbyInfo = new VBox (50, playerLobby, gameInfo);
 		pane = new BorderPane();
 		pane.setStyle("-fx-background-color: darkgrey");
 		pane.setPadding(new Insets(70));
 		pane.setTop(scoreBox);
-		pane.setCenter(gameInfo);
+		pane.setCenter(lobbyInfo);
 		pane.setBottom(choiceBox);
 		gameScene = new Scene(pane, 500, 500);
 		//-------------------------------------------------------//
+		
+		choiceBox = new HBox(10, rockView, paperView, scissorView, lizardView, spockView);
+	    choiceBox.setAlignment(Pos.BOTTOM_CENTER);
 		
 		//--------------Play again scene-------------------------//
 		continueBox = new HBox(100, replay, quit);
@@ -271,19 +259,6 @@ public class RPLS extends Application {
 		primaryStage.setScene(clientStart);
 		primaryStage.show();
 	}
-	
-//	void check2Players() {
-//		while(true) {
-//			if (theClient.info.has2Players == true) {
-//				rockView.setDisable(false);
-//				paperView.setDisable(false);
-//				scissorView.setDisable(false);
-//				lizardView.setDisable(false);
-//				spockView.setDisable(false);
-//				break;
-//			}
-//			
-//		}
-//	}
+
 
 }
