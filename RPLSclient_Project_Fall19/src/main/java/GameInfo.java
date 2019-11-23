@@ -1,22 +1,21 @@
 import java.io.Serializable;
+import java.util.ArrayList;
 
 public class GameInfo implements Serializable {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	int p1Points;
-	int p2Points;
+	ArrayList<String> players;
 	String p1Plays;
 	String p2Plays;
-	Boolean has2Players;
+	boolean has2Players;
 	Boolean p1Replay;
 	Boolean p2Replay;
 	String message;
 	
 	public GameInfo() {
-		p1Points = 0;
-		p2Points = 0;
+		players = new ArrayList<String>();
 		p1Plays = "";
 		p2Plays = "";
 		has2Players = false;
